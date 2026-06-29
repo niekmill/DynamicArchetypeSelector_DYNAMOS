@@ -13,7 +13,11 @@
                 ],
                 "allowedArchetypes": [
                     "computeToData",
-                    "dataThroughTtp"
+                    "dataThroughTtp",
+                    "computeToData-cached",
+                    "dataThroughTtp-cached",
+                    "computeToData-compressed",
+                    "dataThroughTtp-compressed"
                 ],
                 "allowedComputeProviders": [
                     "SURF"
@@ -27,7 +31,11 @@
         "archetypes": [
             "computeToData",
             "dataThroughTtp",
-            "reproducableScience"
+            "reproducableScience",
+            "computeToData-cached",
+            "dataThroughTtp-cached",
+            "computeToData-compressed",
+            "dataThroughTtp-compressed"
         ]
     },
     {
@@ -44,7 +52,11 @@
                 ],
                 "allowedArchetypes": [
                     "computeToData",
-                    "dataThroughTtp"
+                    "dataThroughTtp",
+                    "computeToData-cached",
+                    "dataThroughTtp-cached",
+                    "computeToData-compressed",
+                    "dataThroughTtp-compressed"
                 ],
                 "allowedComputeProviders": [
                     "SURF"
@@ -58,7 +70,11 @@
         "archetypes": [
             "computeToData",
             "dataThroughTtp",
-            "reproducableScience"
+            "reproducableScience",
+            "computeToData-cached",
+            "dataThroughTtp-cached",
+            "computeToData-compressed",
+            "dataThroughTtp-compressed"
         ]
     },
     {

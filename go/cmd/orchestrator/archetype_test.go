@@ -1,100 +1,83 @@
 package main
 
-// import (
-// 	"context"
-// 	"fmt"
-// 	"testing"
+import (
+	"testing"
 
-// 	"github.com/Jorrit05/DYNAMOS/pkg/lib"
-// 	pb "github.com/Jorrit05/DYNAMOS/pkg/proto"
-// 	clientv3 "go.etcd.io/etcd/client/v3"
-// 	"go.etcd.io/etcd/mvcc/mvccpb"
+	"github.com/Jorrit05/DYNAMOS/pkg/lib"
+	pb "github.com/Jorrit05/DYNAMOS/pkg/proto"
+)
 
-// 	"gotest.tools/assert"
-// )
 
-// type mockKVGetter struct {
-// 	response *clientv3.GetResponse
-// 	err      error
-// }
+func validationResponseFor(allowedPerProvider map[string][]string, options map[string]bool) *pb.ValidationResponse {
+	archetypes := map[string]*pb.UserAllowedArchetypes{}
+	dataProviders := map[string]*pb.DataProvider{}
+	for provider, archs := range allowedPerProvider {
+		archetypes[provider] = &pb.UserAllowedArchetypes{Archetypes: archs}
+		dataProviders[provider] = &pb.DataProvider{Archetypes: archs}
+	}
+	return &pb.ValidationResponse{
+		Type:               "validationResponse",
+		RequestType:        "sqlDataRequest",
+		RequestApproved:    true,
+		Options:            options,
+		User:               &pb.User{Id: "test-user", UserName: "test@example.com"},
+		ValidArchetypes:    &pb.UserArchetypes{Archetypes: archetypes},
+		ValidDataproviders: dataProviders,
+	}
+}
 
-// func (m *mockKVGetter) Get(ctx context.Context, key string, opts ...clientv3.OpOption) (*clientv3.GetResponse, error) {
-// 	return m.response, m.err
-// }
+func agentDetailsFor(providers ...string) map[string]lib.AgentDetails {
+	out := map[string]lib.AgentDetails{}
+	for _, p := range providers {
+		out[p] = lib.AgentDetails{
+			Name:       p,
+			RoutingKey: p + "-in",
+			Dns:        p + "." + p + ".svc.cluster.local",
+		}
+	}
+	return out
+}
 
-// var (
-// 	UVA1 = &pb.DataProvider{
-// 		Archetypes: []string{"computeToData", "dataThroughTtp"},
-// 	}
-// 	VU1 = &pb.DataProvider{
-// 		Archetypes: []string{"computeToData", "dataThroughTtp"},
-// 	}
+func TestPickArchetypeBasedOnTopsis_PicksLowestCostWhenBothAllowed(t *testing.T) {
+	vr := validationResponseFor(map[string][]string{
+		"UVA": {"computeToData", "dataThroughTtp"},
+		"VU":  {"computeToData", "dataThroughTtp"},
+	}, map[string]bool{})
 
-// 	test1 = &pb.ValidationResponse{
-// 		Type:            "validationResponse",
-// 		RequestType:     "sqlDataRequest",
-// 		RequestApproved: true,
-// 		Options: map[string]bool{
-// 			"aggregate": false,
-// 		},
-// 		ValidArchetypes: &pb.UserArchetypes{
-// 			Archetypes: map[string]*pb.UserAllowedArchetypes{
-// 				"UVA": {Archetypes: []string{"computeToData", "dataThroughTtp"}},
-// 				"VU":  {Archetypes: []string{"computeToData", "dataThroughTtp"}},
-// 			}},
-// 		User: &pb.User{
-// 			Id:       "1234",
-// 			UserName: "jorrit.stutterheim@cloudnation.nl",
-// 		},
-// 		ValidDataproviders: map[string]*pb.DataProvider{
-// 			"UVA": UVA1,
-// 			"VU":  VU1,
-// 		},
-// 		InvalidDataproviders: []string{},
-// 	}
+	result, _, err := pickArchetypeBasedOnTopsis(vr, agentDetailsFor("UVA", "VU"))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != "dataThroughTtp" {
+		t.Fatalf("expected dataThroughTtp (cheaper at 2 providers), got %q", result)
+	}
+}
 
-// 	agentDetails1 = map[string]lib.AgentDetails{
-// 		"UVA": {Name: "UVA", RoutingKey: "UVA-in", Dns: "uva.uva.svc.cluster.local"},
-// 		"VU":  {Name: "VU", RoutingKey: "VU-in", Dns: "vu.vu.svc.cluster.local"},
-// 	}
-// )
 
-// func TestSelectArchetype(t *testing.T) {
-// 	tests := []struct {
-// 		validationResponse      *pb.ValidationResponse
-// 		authorizedDataProviders map[string]lib.AgentDetails
-// 		expected                string
-// 	}{
-// 		{test1, agentDetails1, "dataThroughTtp"},
-// 	}
+func TestPickArchetypeBasedOnTopsis_RestrictsToIntersection(t *testing.T) {
+	vr := validationResponseFor(map[string][]string{
+		"UVA": {"computeToData", "dataThroughTtp"},
+		"VU":  {"computeToData"},
+	}, map[string]bool{})
 
-// 	// Prepare a mock response:
-// 	kvs := []*mvccpb.KeyValue{
-// 		{
-// 			Key:   []byte("/my/prefix/1"),
-// 			Value: []byte(`{"id": "1", "name": "one"}`),
-// 		},
-// 		{
-// 			Key:   []byte("/my/prefix/2"),
-// 			Value: []byte(`{"id": "2", "name": "two"}`),
-// 		},
-// 	}
+	result, _, err := pickArchetypeBasedOnTopsis(vr, agentDetailsFor("UVA", "VU"))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != "computeToData" {
+		t.Fatalf("expected computeToData (only one in intersection), got %q", result)
+	}
+}
 
-// 	mockResponse := &clientv3.GetResponse{Kvs: kvs}
 
-// 	// Create the mock client:
-// 	mockClient := &mockKVGetter{
-// 		response: mockResponse,
-// 		err:      nil, // no error
-// 	}
+func TestPickArchetypeBasedOnTopsis_ErrorsWhenIntersectionEmpty(t *testing.T) {
+	vr := validationResponseFor(map[string][]string{
+		"UVA": {"computeToData"},
+		"VU":  {"dataThroughTtp"},
+	}, map[string]bool{})
 
-// 	for _, test := range tests {
-// 		t.Run("", func(t *testing.T) {
-// 			result, err := chooseArchetype(test.validationResponse, test.authorizedDataProviders)
-// 			if err != nil {
-// 				fmt.Printf("err: %v", err)
-// 			}
-// 			assert.Equal(t, test.expected, result)
-// 		})
-// 	}
-// }
+	_, _, err := pickArchetypeBasedOnTopsis(vr, agentDetailsFor("UVA", "VU"))
+	if err == nil {
+		t.Fatalf("expected error when intersection is empty, got nil")
+	}
+}

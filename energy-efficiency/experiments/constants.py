@@ -17,7 +17,7 @@ ARCHETYPE_ACRONYMS = {
 }
 
 # Prometheus 
-PROMETHEUS_URL = "http://localhost:9090"
+PROMETHEUS_URL = "http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090"
 PROM_CONTAINERS = "{container_name=~\"system_processes|uva|vu|surf|sql.*|policy.*|orchestrator|sidecar|rabbitmq|api-gateway\"}"
 PROM_KEPLER_ENERGY_METRIC = "kepler_container_joules_total"
 PROM_KEPLER_CONTAINER_LABEL = "container_name"
@@ -26,13 +26,13 @@ PROM_ENERGY_QUERY_RANGE = f"sum(increase({PROM_KEPLER_ENERGY_METRIC}{PROM_CONTAI
 
 # Experiment configurations
 NUM_EXP_ACTIONS = 7  # Number of actions per experiment
-IDLE_PERIOD = 120  # Idle period in seconds
+IDLE_PERIOD = 45  # Idle period in seconds
 ACTIVE_PERIOD = 120  # Active period in seconds
 
 # DYNAMOS requests
 REQUEST_URLS = {
-    "uva": "http://uva.uva.svc.cluster.local:80/agent/v1/sqlDataRequest/uva",
-    "surf": "http://surf.surf.svc.cluster.local:80/agent/v1/sqlDataRequest/surf"
+    "uva":  "http://uva.uva.svc.cluster.local:8080/agent/v1/sqlDataRequest/uva",
+    "surf": "http://surf.surf.svc.cluster.local:8080/agent/v1/sqlDataRequest/surf",
 }
 HEADERS = {
     "Content-Type": "application/json",
@@ -46,7 +46,7 @@ INITIAL_REQUEST_BODY = {
     "options": {"graph": False, "aggregate": False},
     "user": {"id": "12324", "userName": "jorrit.stutterheim@cloudnation.nl"},
 }
-APPROVAL_URL = "http://api-gateway.api-gateway.svc.cluster.local:80/api/v1/requestApproval"
+APPROVAL_URL = "http://api-gateway.api-gateway.svc.cluster.local:8080/api/v1/requestApproval"
 HEADERS_APPROVAL = {"Content-Type": "application/json"}
 REQUEST_BODY_APPROVAL = {
     "type": "sqlDataRequest",
@@ -58,7 +58,7 @@ REQUEST_BODY_APPROVAL = {
 }
 
 # Update archetypes
-UPDATE_ARCH_URL = "http://orchestrator.orchestrator.svc.cluster.local:80/api/v1/archetypes/agreements"
+UPDATE_ARCH_URL = "http://orchestrator.orchestrator.svc.cluster.local:8080/api/v1/archetypes/agreements"
 INITIAL_REQUEST_BODY_ARCH = {
     "name": "computeToData",
     "computeProvider": "dataProvider",

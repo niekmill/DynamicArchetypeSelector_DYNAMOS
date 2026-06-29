@@ -1,0 +1,9 @@
+run,archetype,rank,score
+full_catalogue,dataThroughTtp-cached,1,0.975840
+full_catalogue,computeToData-cached,2,0.942336
+full_catalogue,computeToData-compressed,3,0.229704
+full_catalogue,computeToData,4,0.208450
+full_catalogue,dataThroughTtp-compressed,5,0.058652
+full_catalogue,dataThroughTtp,6,0.057926
+base_only,computeToData,1,0.772366
+base_only,dataThroughTtp,2,0.227634

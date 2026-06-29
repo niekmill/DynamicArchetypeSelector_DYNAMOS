@@ -3,7 +3,7 @@
 # Change this to the path of the DYNAMOS repository on your disk
 echo "Setting up paths..."
 # Path to root of DYNAMOS project on local machine
-DYNAMOS_ROOT="/mnt/c/Users/cpoet/VSC_Projs/EnergyEfficiency_DYNAMOS"
+DYNAMOS_ROOT="/Users/niekbremer/Downloads/solverDEMO/dynamos-collin"
 
 # Exit on errors
 set -e

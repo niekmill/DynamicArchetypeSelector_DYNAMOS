@@ -81,6 +81,18 @@ message UserArchetypes {
   map<string, UserAllowedArchetypes> archetypes = 2;
 }
 
+message Constraint {
+  string criterion = 1;       
+  string operator  = 2;       
+  double threshold = 3;       
+}
+
+message TopsisDecision {
+  string chosen_archetype = 1;            
+  map<string, double> scores = 2;         
+  string source = 3;                     
+}
+
 message ValidationResponse {
   string type = 1;
   string request_type = 2;
@@ -91,6 +103,11 @@ message ValidationResponse {
   bool request_approved = 7;
   UserArchetypes valid_archetypes = 8;
   map<string,bool> options = 9;
+  repeated string     active_criteria = 10;
+  map<string, double> weights         = 11;
+  repeated Constraint constraints     = 12;
+  int64               expected_rows   = 13;
+  bool                is_first_request = 14; 
 }
 
 message User {
@@ -105,6 +122,11 @@ message RequestApproval {
   string destination_queue = 4;
   // OLD: was part of doing /sqlDataRequest after /requestApproval, now only requests approval
   // map<string, bool> options = 5;
+  repeated string     active_criteria = 6;  
+  map<string, double> weights         = 7;  
+  repeated Constraint constraints     = 8;  
+  int64               expected_rows   = 9;  
+  bool                is_first_request = 10;
 }
 
 message RequestApprovalResponse  {
@@ -115,6 +137,7 @@ message RequestApprovalResponse  {
   string job_id = 5;
   string error = 6;
   RequestMetadata request_metadata = 7;
+  TopsisDecision topsis = 8;
 }
 
 message PolicyUpdate {

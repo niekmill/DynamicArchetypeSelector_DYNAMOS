@@ -43,12 +43,24 @@ type User struct {
 }
 
 type RequestApproval struct {
-	Type          string   `json:"type"`
-	User          User     `json:"user"`
-	DataProviders []string `json:"dataProviders"`
-	// OLD: was part of doing /sqlDataRequest after /requestApproval, now only requests approval
-	// DataRequest   DataRequest `json:"dataRequest"`
-	// DataRequest json.RawMessage `json:"data_request"`
+	Type           string       `json:"type"`
+	User           User         `json:"user"`
+	DataProviders  []string     `json:"dataProviders"`
+	ExpectedRows   int64        `json:"expected_rows,omitempty"`
+	IsFirstRequest bool         `json:"is_first_request,omitempty"`
+	Topsis         *TopsisInput `json:"topsis,omitempty"`
+}
+
+type TopsisInput struct {
+	Criteria    []string           `json:"criteria,omitempty"`  
+	Weights     map[string]float64 `json:"weights,omitempty"`   
+	Constraints []ConstraintInput  `json:"constraints,omitempty"`
+}
+
+type ConstraintInput struct {
+	Criterion string  `json:"criterion"`
+	Operator  string  `json:"operator"` 
+	Threshold float64 `json:"threshold"`
 }
 
 // OLD: was part of doing /sqlDataRequest after /requestApproval, now only requests approval

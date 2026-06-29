@@ -63,17 +63,40 @@ func requestHandler() http.HandlerFunc {
 		logger.Debug("User details", zap.String("User ID", userPb.Id), zap.String("User Name", userPb.UserName))
 		dataRequestInterface["user"] = userPb
 
-		// Create protobuf struct for the req approval flow
+		expectedRows := apiReqApproval.ExpectedRows
+
+		var (
+			activeCriteria []string
+			weights        map[string]float64
+			constraints    []*pb.Constraint
+		)
+		if t := apiReqApproval.Topsis; t != nil {
+			activeCriteria = t.Criteria
+			weights = t.Weights
+			for _, c := range t.Constraints {
+				if c.Criterion == "" || c.Operator == "" {
+					continue
+				}
+				constraints = append(constraints, &pb.Constraint{
+					Criterion: c.Criterion,
+					Operator:  c.Operator,
+					Threshold: c.Threshold,
+				})
+			}
+		}
+
 		protoRequest := &pb.RequestApproval{
 			Type:             apiReqApproval.Type,
 			User:             userPb,
 			DataProviders:    apiReqApproval.DataProviders,
 			DestinationQueue: "policyEnforcer-in",
-			// OLD: was part of doing /sqlDataRequest after /requestApproval, now only requests approval
-			// Options:          dataRequestOptions.Options,
+			ActiveCriteria:   activeCriteria,
+			Weights:          weights,
+			Constraints:      constraints,
+			ExpectedRows:     expectedRows,
+			IsFirstRequest:   apiReqApproval.IsFirstRequest,
 		}
 
-		// Create a channel to receive the response
 		responseChan := make(chan validation)
 
 		requestApprovalMutex.Lock()
@@ -110,9 +133,7 @@ func requestHandler() http.HandlerFunc {
 			// }
 			// logger.Sugar().Infof("Data Prepared jsonData: %s", dataRequestJson)
 			
-			responses := sendRequestApproval(msg.AuthorizedProviders, apiReqApproval.Type, msg.JobId)
-			// OLD: was part of doing /sqlDataRequest after /requestApproval, now only requests approval
-			// responses := sendDataToAuthProviders(dataRequestJson, msg.AuthorizedProviders, apiReqApproval.Type, msg.JobId)
+			responses := sendRequestApproval(msg.AuthorizedProviders, apiReqApproval.Type, msg.JobId, msg.Topsis)
 			w.WriteHeader(http.StatusOK)
 			w.Write(responses)
 			return
@@ -124,17 +145,24 @@ func requestHandler() http.HandlerFunc {
 	}
 }
 
-// Function to return request approval
-func sendRequestApproval(authorizedProviders map[string]string, msgType string, jobId string) []byte {
+func sendRequestApproval(authorizedProviders map[string]string, msgType string, jobId string, topsis *pb.TopsisDecision) []byte {
 	logger.Sugar().Debug("Returning request approval")
 
 	responseMap := map[string]interface{}{
 		"jobId":     jobId,
 		"authorized_providers": authorizedProviders,
 	}
+	if topsis != nil {
+		topsisOut := map[string]interface{}{
+			"chosenArchetype": topsis.ChosenArchetype,
+			"source":          topsis.Source,
+		}
+		if len(topsis.Scores) > 0 {
+			topsisOut["scores"] = topsis.Scores
+		}
+		responseMap["topsis"] = topsisOut
+	}
 
-	// jsonResponse, _ := json.Marshal(responseMap)
-	// return jsonResponse
 	return cleanupAndMarshalResponse(responseMap)
 }
 

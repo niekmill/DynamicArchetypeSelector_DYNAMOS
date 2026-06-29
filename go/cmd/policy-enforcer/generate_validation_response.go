@@ -31,6 +31,11 @@ func checkRequestApproval(ctx context.Context, requestApproval *pb.RequestApprov
 		RequestApproved: false,
 		ValidArchetypes: &pb.UserArchetypes{Archetypes: make(map[string]*pb.UserAllowedArchetypes)},
 		Options:         make(map[string]bool),
+		ActiveCriteria:  requestApproval.ActiveCriteria,
+		Weights:         requestApproval.Weights,
+		Constraints:     requestApproval.Constraints,
+		ExpectedRows:    requestApproval.ExpectedRows,
+		IsFirstRequest:  requestApproval.IsFirstRequest,
 	}
 
 	// OLD: was part of doing /sqlDataRequest after /requestApproval, now only requests approval

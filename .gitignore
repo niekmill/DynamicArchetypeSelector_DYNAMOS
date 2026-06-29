@@ -107,4 +107,23 @@ node_modules
 datasets/*.csv
 
 *.drawio.bkp
-*.drawio.dtmp
+*.drawio.dtmp.DS_Store
+ca.crt
+ca.key
+issuer.crt
+issuer.key
+*.log
+
+.DS_Store
+
+ca.crt
+
+ca.crt
+
+ca.key
+issuer.crt
+
+issuer.key
+
+*.log
+

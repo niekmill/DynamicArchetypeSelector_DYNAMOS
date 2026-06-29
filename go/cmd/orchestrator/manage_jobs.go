@@ -164,7 +164,7 @@ func processPolicyUpdate(ctx context.Context, agentsWithThisJob map[string]*pb.C
 		logger.Sugar().Errorf("error getAuthorizedProviders : %v", err)
 	}
 
-	archetype, err := chooseArchetype(policyUpdate.ValidationResponse, authorizedProviders)
+	archetype, _, err := chooseArchetype(policyUpdate.ValidationResponse, authorizedProviders)
 	if err != nil {
 		logger.Sugar().Errorf("error choosing archetype: %v", err)
 	}
@@ -339,7 +339,7 @@ func handleRequestApproval(ctx context.Context, validationResponse *pb.Validatio
 
 	compositionRequest := &pb.CompositionRequest{}
 	compositionRequest.User = &pb.User{}
-	userTargets, ctx, err := startCompositionRequest(ctx, validationResponse, authorizedProviders, compositionRequest)
+	userTargets, ctx, topsisDecision, err := startCompositionRequest(ctx, validationResponse, authorizedProviders, compositionRequest)
 	if err != nil {
 		switch e := err.(type) {
 		case *UnauthorizedProviderError:
@@ -360,6 +360,7 @@ func handleRequestApproval(ctx context.Context, validationResponse *pb.Validatio
 	result.AuthorizedProviders = make(map[string]string)
 	result.AuthorizedProviders = userTargets
 	result.JobId = compositionRequest.JobName
+	result.Topsis = topsisDecision
 
 	c.SendRequestApprovalResponse(ctx, result)
 }

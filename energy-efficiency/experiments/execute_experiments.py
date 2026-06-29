@@ -54,6 +54,18 @@ def run_experiment(archetype: str, output_dir, exp_rep):
     idle_energy = get_energy_consumption()
     print(f"Idle Energy: {idle_energy} (in J)")
 
+    print("Warmup approval (discarded)...")
+    for attempt in range(3):
+        try:
+            r = requests.post(constants.APPROVAL_URL, json=constants.REQUEST_BODY_APPROVAL, headers=constants.HEADERS_APPROVAL, timeout=15)
+            if r.status_code == 200:
+                print(f"  warmup ok (attempt {attempt + 1})")
+                break
+            print(f"  warmup attempt {attempt + 1} returned {r.status_code}, retrying")
+        except requests.exceptions.RequestException as e:
+            print(f"  warmup attempt {attempt + 1} raised {type(e).__name__}, retrying")
+        time.sleep(3)
+
     # Phase 2: Active period
     runs = {}
     # Record the start time of the active period
@@ -62,14 +74,31 @@ def run_experiment(archetype: str, output_dir, exp_rep):
     for run in range(constants.NUM_EXP_ACTIONS):
         print(f"\nStarting action {run + 1}/{constants.NUM_EXP_ACTIONS}...")
         # Execute request approval
-        response_approval = requests.post(constants.APPROVAL_URL, json=constants.REQUEST_BODY_APPROVAL, headers=constants.HEADERS_APPROVAL)
+        response_approval = None
+        for attempt in range(2):
+            response_approval = requests.post(constants.APPROVAL_URL, json=constants.REQUEST_BODY_APPROVAL, headers=constants.HEADERS_APPROVAL)
+            if response_approval.status_code == 200:
+                break
+            print(f"  approval attempt {attempt + 1} returned {response_approval.status_code}, retrying")
+            time.sleep(2)
         # Extract relevant data from the response
         status_code_approval = response_approval.status_code
         execution_time_approval = response_approval.elapsed.total_seconds()
         print(f"Approval request completed with status: {status_code_approval}, execution time: {execution_time_approval}s")
+        if status_code_approval != 200:
+            print(f"  skipping action {run + 1}: approval failed after retries")
+            runs[run] = {
+                "appr_status_code": status_code_approval,
+                "appr_exec_time": execution_time_approval,
+                "data_status_code": 0,
+                "data_req_exec_time": 0.0,
+            }
+            continue
         # Get job-id
         job_id = response_approval.json()["jobId"]
         print(f"Using job-id: {job_id}")
+
+        time.sleep(10)
 
         # Construct data request body
         request_body = constants.INITIAL_REQUEST_BODY
